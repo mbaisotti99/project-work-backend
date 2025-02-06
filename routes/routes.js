@@ -1,10 +1,12 @@
-import express from "express"
+const express = require("express")
 
-import {getDoc, getAllDocs} from "../controllers/functions"
+const {getDoc, getAllDocs} = require("../controllers/functions")
 
 const router = express.Router()
 
-module.exports = router
 
 router.get("/:id", getDoc)
 router.get("/", getAllDocs)
+
+
+module.exports = router

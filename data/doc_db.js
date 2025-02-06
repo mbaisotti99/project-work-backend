@@ -1,4 +1,4 @@
-import mysql from "mysql2"
+const mysql = require("mysql2")
 
 const {PASSWORD, DB_NAME} = process.env
 
