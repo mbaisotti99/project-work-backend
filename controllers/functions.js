@@ -1,9 +1,7 @@
 const connection = require("../data/doc_db")
 
 const getDoc = (req, resp, next) => {
-    const sql = `   SELECT * 
-                    FROM medici
-                    `
+    const sql = ` SELECT * FROM medici; `;
 
 
     const id = req.params.id
