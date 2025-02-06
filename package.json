@@ -3,6 +3,7 @@
     "dev": "node --env-file=.env --watch app.js"
   },
   "dependencies": {
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "mysql2": "^3.12.0",
     "react-router-dom": "^7.1.5"

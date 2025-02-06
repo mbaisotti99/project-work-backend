@@ -1,18 +1,20 @@
-const express = require("express")
-const routes = require("./routes/routes")
-const {notFound} = require("./controllers/functions")
+const express = require('express');
+const routes = require("./routes/routes");
+const errorHandler = require("./middleware/errorHandler");
 
-const app = express()
-const port = process.env.SERVER_PORT
+const app = express();
 
-app.use(express.json())
-app.use(express.static("public"))
+require("dotenv").config(); // Assicurati di caricare le variabili d'ambiente
+const port = process.env.SERVER_PORT || 3000; // Valore di default se la variabile non è definita
 
-app.use("/medici", routes)
+app.use(express.json());
+app.use(express.static("public"));
 
-app.use(notFound)
+app.use("/medici", routes);
 
-app.listen(port, ()=>{
+app.use(errorHandler);
+
+app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
-    
-})
+
+});

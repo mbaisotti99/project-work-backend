@@ -1,12 +1,12 @@
 const express = require("express")
 
-const {getDoc, getAllDocs} = require("../controllers/functions")
+const { indexMed, showRev, showMed } = require("../controllers/functions")
 
 const router = express.Router()
 
+router.get("/", indexMed)
+router.get("/:id", showMed)
+router.get("/:id/recensioni", showRev)
 
-router.get("/:id", getDoc)
-router.get("/", getAllDocs)
 
-
-module.exports = router
+module.exports = router;

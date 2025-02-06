@@ -1,45 +1,16 @@
 const connection = require("../data/doc_db")
 
-const getDoc = (req, resp, next) => {
-    const sql = ` SELECT * FROM medici; `;
-
-
-    const id = req.params.id
-    connection.query(sql, (err) => {
-        if (err) {
-            return next(new Error("Errore del server"))
-        } else {
-            const sql2 = `  SELECT *
-                            FROM medici
-                            WHERE id = ?                
-            `
-            connection.query(sql2, [id], (err, results) => {
-                if (err) {
-                    // return next(new Error("Errore del server"))
-                    return resp.status(500).json({
-                        err: err.stack
-                    })
-                } else {
-                    return resp.status(200).json({
-                        message: "Medico Trovato",
-                        data: results
-                    })
-                }
-            })
-        }
-    })
-}
-
-const getAllDocs = (req, resp, next) => {
+// INDEX
+const indexMed = (req, resp, next) => {
     const sql = `   SELECT * 
                     FROM medici    `
 
     connection.query(sql, (err, docs) => {
         if (err) {
-            // return next(new Error("Errore del server"))
-            return resp.status(500).json({
-                err: err.stack
-            })
+            return next(new Error("Errore del server"))
+            // return resp.status(500).json({
+            //     err: err.stack
+            // })
         } else {
             resp.status(200).json({
                 message: "Medici trovati",
@@ -49,15 +20,44 @@ const getAllDocs = (req, resp, next) => {
     })
 }
 
-const getReviews = (req, resp, next) => {
+// SHOW
+const showMed = (req, resp, next) => {
+    const sql = ` SELECT * FROM medici; `;
+
+
+    const id = req.params.id
+    connection.query(sql, (err) => {
+        if (err) {
+            return next(new Error("Internal Server Error"));
+        } else {
+            const sql2 = `  SELECT *
+                            FROM medici
+                            WHERE id = ?                
+            `
+            connection.query(sql2, [id], (err, results) => {
+                if (err) throw new Error("Internal Server Error")
+
+
+                return resp.status(200).json({
+                    message: "Medico non Trovato", // Da rifare. nota: malfunzionante su postman
+                    data: results
+                })
+
+            })
+        }
+    })
+}
+
+// SHOW RECENSIONI
+const showRev = (err, req, resp, next) => {
     const sql =
         `
         SELECT *
-        FROM recensione
+        FROM recensioni
         JOIN medici
-        ON medici.id = recensione.id_medico
-        JOIN utente
-        ON utente.id = recensione.id_utente
+        ON medici.id = recensioni.id_medico
+        JOIN utenti
+        ON utenti.id = recensioni.id_utente
     `
 
     connection.query(sql, (err) => {
@@ -65,15 +65,15 @@ const getReviews = (req, resp, next) => {
             return next(new Error("Errore del server"))
         } else {
 
-            const id = req.params.id 
+            const id = req.params.id
 
             const sql2 = `
-                SELECT medici.nome as nome_medico, medici.cognome as cognome_medico, utente.nome_utente as utente, recensione.recensione, recensione.voto
-                FROM recensione
+                SELECT medici.nome as nome_medico, medici.cognome as cognome_medico, utenti.nome_utente as utente, recensioni.recensione, recensioni.voto
+                FROM recensioni
                 JOIN medici
-                ON medici.id = recensione.id_medico
-                JOIN utente
-                ON utente.id = recensione.id_utente
+                ON medici.id = recensioni.id_medico
+                JOIN utenti
+                ON utenti.id = recensioni.id_utente
             `
 
             connection.query(sql2, [id], (err, reviews) => {
@@ -90,11 +90,4 @@ const getReviews = (req, resp, next) => {
     })
 }
 
-
-const notFound = (resp) => {
-    resp.status(404).json({
-        message: "Route not found"
-    })
-}
-
-module.exports = { getDoc, getAllDocs, getReviews, notFound }
+module.exports = { indexMed, showMed, showRev }
