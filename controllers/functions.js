@@ -1,4 +1,5 @@
 const connection = require("../data/doc_db")
+const { generateSlug } = require("../utils/generateSlug")
 
 // INDEX
 const indexMed = (req, resp, next) => {
@@ -128,35 +129,71 @@ const showRev = (req, resp, next) => {
 // STORE
 const store = (req, res, next) => {
 
-    const { nome, cognome, email, telefono, indirizzo, specializzazione } = req.body;
+    const { nome, cognome, email, telefono, indirizzo, citta, specializzazione } = req.body;
 
-
-    // Name Validation
-    if (!nome || nome.length < 3) {
-        return res.status(400).json({
-            status: "fail",
-            message: "Name should be at least 3 characters long"
-        });
+    // Validazione tutti i campi
+    if (!nome || !cognome || !email || !telefono || !indirizzo || !specializzazione) {
+        return res.status(400).json({ status: "fail", message: "Tutti i campi sono obbligatori" });
     }
 
+    // Validazione nome
+    if (nome.length < 3) {
+        return res.status(400).json({ status: "fail", message: "Il nome deve avere almeno 3 caratteri" });
+    }
 
-    const sql = `
-    INSERT INTO medici(nome, cognome, email, telefono, indirizzo, specializzazione)
-    VALUES(?, ?, ?, ?, ?, ?);
-    `;
+    // Validazione cognome
+    if (cognome.length < 3) {
+        return res.status(400).json({ status: "fail", message: "Il cognome deve avere almeno 3 caratteri" });
+    }
 
-    connection.query(sql, [nome, cognome, email, telefono, indirizzo, specializzazione], (err, results) => {
+    // Validazione indirizzo
+    if (indirizzo.length < 5) {
+        return res.status(400).json({ status: "fail", message: "L'indirizzo deve avere almeno 5 caratteri" });
+    }
 
-        if (err) {
-            return next(new Error("Internal Server Error"))
+    // Validazione email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ status: "fail", message: "L'email inserita non è valida" });
+    }
+
+    // Validazione telefono
+    const telefonoRegex = /^\+[0-9]+$/;
+    if (!telefonoRegex.test(telefono)) {
+        return res.status(400).json({ status: "fail", message: "Il numero di telefono può contenere solo numeri e '+' all'inizio" });
+    }
+
+    // Genera Slug con nome e cognome
+    const slug = generateSlug(nome, cognome);
+
+    // Check se il slug esiste gia'
+    const checkSlug = "SELECT * FROM medici WHERE slug = ?";
+
+    connection.query(checkSlug, [slug], (err, results) => {
+        if (err) return next(err);
+
+        if (results.length > 0) {
+    
+            return res.status(409).json({ 
+                status: "fail",
+                message: "Esiste già un medico con questo nome e cognome" 
+            });
         }
 
-        return res.status(201).json({
-            status: "success",
-            message: "Saved successfully!",
-        })
+        const sql = `
+            INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        `;
 
-    })
+        connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione], (err, results) => {
+            if (err) return next(err);
+
+            return res.status(201).json({
+                status: "success",
+                message: "Medico salvato con successo!",
+            });
+        });
+    });
 
 }
 
