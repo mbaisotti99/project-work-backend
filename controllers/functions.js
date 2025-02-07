@@ -78,7 +78,7 @@ const showMed = (req, resp, next) => {
 }
 
 // SHOW RECENSIONI
-const showRev = (err, req, resp, next) => {
+const showRev = (req, resp, next) => {
     const sql =
         `
         SELECT *
@@ -97,13 +97,14 @@ const showRev = (err, req, resp, next) => {
             const id = parseInt(req.params.id)
 
             const sql2 = `
-                SELECT medici.nome as nome_medico, medici.cognome as cognome_medico, utenti.nome_utente as utente, recensioni.recensione, recensioni.voto
+                SELECT medici.nome AS nome_medico, medici.cognome AS cognome_medico, 
+                utenti.nome_utente AS utente, recensioni.recensione, recensioni.voto
                 FROM recensioni
-                JOIN medici
-                ON medici.id = recensioni.id_medico
-                JOIN utenti
-                ON utenti.id = recensioni.id_utente
-            `
+                JOIN medici ON medici.id = recensioni.id_medico
+                JOIN utenti ON utenti.id = recensioni.id_utente
+                WHERE medici.id = ?; `;
+
+
             if (!isNaN(id)) {
                 connection.query(sql2, [id], (err, reviews) => {
                     if (err) {
@@ -124,37 +125,39 @@ const showRev = (err, req, resp, next) => {
     })
 }
 
+// Store
+const store = (req, res, next) => {
 
-const createMed = (req, resp, next) => {
-    const { nome, cognome, mail, cell, indirizzo, spec } = req.body
-    const mailDupes = []
+    const { nome, cognome, email, telefono, indirizzo, specializzazione } = req.body;
+
+
+    // Name Validation
+    if (!nome || nome.length < 3) {
+        return res.status(400).json({
+            status: "fail",
+            message: "Name should be at least 3 characters long"
+        });
+    }
+
+
     const sql = `
-        INSERT INTO medici (nome, cognome, email, telefono, indirizzo, specializzazione)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `
+    INSERT INTO medici(nome, cognome, email, telefono, indirizzo, specializzazione)
+    VALUES(?, ?, ?, ?, ?, ?);
+    `;
 
-    const controlSql = `SELECT email FROM medici WHERE email = ?`
-    connection.query(controlSql, [mail], (err, result) => {
+    connection.query(sql, [nome, cognome, email, telefono, indirizzo, specializzazione], (err, results) => {
+
         if (err) {
-            return next(new Error("Errore nel controllo"))
-        } else if (result.length !== 0) {
-            return resp.send(500).json({
-                message: "Mail già presente"
-            })
-        } else {
-            connection.query(sql, [nome, cognome, mail, cell, indirizzo, spec], (err, results) => {
-                if (err) {
-                    return next(new Error("Medico non caricato"))
-                } else {
-                    return resp.status(500).json({
-                        message: "OK! Medico caricato"
-                    })
-                }
-            })
+            return next(new Error("Internal Server Error"))
         }
+
+        return res.status(201).json({
+            status: "success",
+            message: "Saved successfully!",
+        })
+
     })
 
 }
 
-
-module.exports = { indexMed, showMemodule, createMed, showRev }
+module.exports = { indexMed, showMed, showRev, store }
