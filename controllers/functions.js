@@ -36,13 +36,16 @@ const showMed = (req, resp, next) => {
                                 WHERE id = ?                
                 `
                 connection.query(sql2, [id], (err, results) => {
-                    if (err) throw new Error("Internal Server Error")
+                    if (err) {
+                        return next(new Error("Internal Server Error"))
+                    } else {
+                        return resp.status(200).json({
+                            message: "Medico Trovato", // Da rifare. nota: malfunzionante su postman
+                            data: results
+                        })
+                    }
     
     
-                    return resp.status(200).json({
-                        message: "Medico non Trovato", // Da rifare. nota: malfunzionante su postman
-                        data: results
-                    })
     
                 })
             }
