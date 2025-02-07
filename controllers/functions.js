@@ -169,31 +169,55 @@ const store = (req, res, next) => {
     // Check se il slug esiste gia'
     const checkSlug = "SELECT * FROM medici WHERE slug = ?";
 
-    connection.query(checkSlug, [slug], (err, results) => {
-        if (err) return next(err);
+    const checkMail = `SELECT email FROM medici`
 
-        if (results.length > 0) {
-    
-            return res.status(409).json({ 
-                status: "fail",
-                message: "Esiste già un medico con questo nome e cognome" 
+    connection.query(checkMail, (err, results) => {
+        if (err) {
+            return res.status(500).json({
+                message: "errore",
+                err: err.stack
+            })
+        } else {
+            results.forEach((curMail) => {
+                if (curMail.email == email) {
+                    return res.status(400).json({
+                        message:"Mail già presente nel sistema"
+                    })
+                } 
+            })
+        }
+        
+        // console.log(results);
+
+
+            connection.query(checkSlug, [slug], (err, results) => {
+                if (err) return next(err);
+        
+                if (results.length > 0) {
+            
+                    return res.status(409).json({ 
+                        status: "fail",
+                        message: "Esiste già un medico con questo nome e cognome" 
+                    });
+                }
+        
+                const sql = `
+                    INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                `;
+        
+                connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione], (err, results) => {
+                    if (err) return next(err);
+        
+                    return res.status(201).json({
+                        status: "success",
+                        message: "Medico salvato con successo!",
+                    });
+                });
             });
         }
+    ) 
 
-        const sql = `
-            INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-        `;
-
-        connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione], (err, results) => {
-            if (err) return next(err);
-
-            return res.status(201).json({
-                status: "success",
-                message: "Medico salvato con successo!",
-            });
-        });
-    });
 
 }
 
