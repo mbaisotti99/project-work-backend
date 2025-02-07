@@ -1,7 +1,8 @@
+// DATA
 const connection = require("../data/doc_db")
 const { generateSlug } = require("../utils/generateSlug")
 
-// INDEX
+// INDEX MEDICI
 const indexMed = (req, resp, next) => {
 
     const filters = req.query;
@@ -26,6 +27,7 @@ const indexMed = (req, resp, next) => {
     }
 
     connection.query(sql, params, (err, docs) => {
+
         if (err) {
             return next(new Error("Errore del server"))
         } else {
@@ -34,139 +36,140 @@ const indexMed = (req, resp, next) => {
                 data: docs
             })
         }
+
     })
+
 }
 
-// SHOW
-const showMed = (req, resp, next) => {
-    const sql = ` SELECT * FROM medici; `;
+// SHOW MEDICI
+const showMed = (req, res, next) => {
 
+    const sql = ` SELECT * FROM medici
+                  WHERE slug = ? ; `;
 
-    const id = parseInt(req.params.id)
-    if (!isNaN(id)) {
-        connection.query(sql, (err) => {
-            if (err) {
-                return next(new Error("Internal Server Error"));
-            } else {
-                const sql2 = `  SELECT *
-                                FROM medici
-                                WHERE id = ?                
-                `
-                connection.query(sql2, [id], (err, results) => {
-                    if (err) {
-                        return next(new Error("Internal Server Error"))
-                    } else if (results.length !== 0) {
-                        return resp.status(200).json({
-                            message: "Medico Trovato",
-                            data: results
-                        })
-                    } else {
-                        return resp.status(404).json({
-                            message: "Medico NON Trovato"
-                        })
-                    }
+    const slug = req.params.slug;
 
+    connection.query(sql, [slug], (err, medici) => {
 
+        if (err) return next(new Error("Internal Server Error"));
 
-                })
+        if (medici.length === 0) {
+            return res.status(404).json({
+                status: "fail",
+                message: "Dottore non trovato",
+            });
+        }
+
+        return res.status(200).json({
+            status: "success",
+            data: {
+                status: "success",
+                data: medici,
             }
         })
-    } else {
-        return resp.status(500).json({
-            message: "Id non valido"
-        })
-    }
+
+    })
+    
 }
 
 // SHOW RECENSIONI
 const showRev = (req, resp, next) => {
-    const sql =
-        `
-        SELECT *
-        FROM recensioni
-        JOIN medici
-        ON medici.id = recensioni.id_medico
-        JOIN utenti
-        ON utenti.id = recensioni.id_utente
-    `
 
-    connection.query(sql, (err) => {
+    const slug = req.params.slug;
+
+    const sql = `    
+        SELECT  medici.nome AS nome_medico,
+                medici.cognome AS cognome_medico, 
+                utenti.nome_utente AS utente,
+                recensioni.recensione, 
+                recensioni.voto
+        FROM recensioni
+        JOIN medici ON medici.id = recensioni.id_medico
+        JOIN utenti ON utenti.id = recensioni.id_utente
+        WHERE medici.slug = ?; 
+    `;
+    
+    connection.query(sql, [slug], (err, recensioni) => {
+
         if (err) {
             return next(new Error("Errore del server"))
-        } else {
+        } 
 
-            const id = parseInt(req.params.id)
-
-            const sql2 = `
-                SELECT medici.nome AS nome_medico, medici.cognome AS cognome_medico, 
-                utenti.nome_utente AS utente, recensioni.recensione, recensioni.voto
-                FROM recensioni
-                JOIN medici ON medici.id = recensioni.id_medico
-                JOIN utenti ON utenti.id = recensioni.id_utente
-                WHERE medici.id = ?; `;
-
-
-            if (!isNaN(id)) {
-                connection.query(sql2, [id], (err, reviews) => {
-                    if (err) {
-                        return next(new Error("Errore del server"))
-                    } else {
-                        resp.status(200).json({
-                            message: "Recensioni trovate",
-                            data: reviews
-                        })
-                    }
-                })
-            } else {
-                return resp.status(500).json({
-                    message: "Id non valido"
-                })
-            }
+        if (recensioni.length === 0) {
+            return resp.status(404).json({
+                status: "fail",
+                message: "Nessuna recensione trovata per questo medico",
+            });
         }
+
+        return resp.status(200).json({
+            status: "success",
+            data: recensioni,
+        });
+        
     })
+
 }
 
-// STORE
+// STORE MEDICI
 const store = (req, res, next) => {
 
     const { nome, cognome, email, telefono, indirizzo, citta, specializzazione } = req.body;
 
-    // Validazione tutti i campi
+    // VALIDAZIONE TUTTI I CAMPI
     if (!nome || !cognome || !email || !telefono || !indirizzo || !specializzazione) {
-        return res.status(400).json({ status: "fail", message: "Tutti i campi sono obbligatori" });
+        return res.status(400).json({ 
+            status: "fail", 
+            message: "Tutti i campi sono obbligatori" 
+        });
     }
 
-    // Validazione nome
+    // VALIDAZIONE NOME
     if (nome.length < 3) {
-        return res.status(400).json({ status: "fail", message: "Il nome deve avere almeno 3 caratteri" });
+        return res.status(400).json({ 
+            status: "fail", 
+            message: "Il nome deve avere almeno 3 caratteri" 
+        });
     }
 
-    // Validazione cognome
+    // VALIDAZIONE COGNOME
     if (cognome.length < 3) {
-        return res.status(400).json({ status: "fail", message: "Il cognome deve avere almeno 3 caratteri" });
+        return res.status(400).json({ 
+            status: "fail", 
+            message: "Il cognome deve avere almeno 3 caratteri" 
+        });
     }
 
-    // Validazione indirizzo
+    // VALIDAZIONE INDIRIZZO
     if (indirizzo.length < 5) {
-        return res.status(400).json({ status: "fail", message: "L'indirizzo deve avere almeno 5 caratteri" });
+        return res.status(400).json({ 
+            status: "fail", 
+            message: "L'indirizzo deve avere almeno 5 caratteri" 
+        });
     }
 
-    // Validazione email
+    // VALIDAZIONE EMAIL
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        return res.status(400).json({ status: "fail", message: "L'email inserita non è valida" });
+        return res.status(400).json({ 
+            status: "fail", 
+            message: "L'email inserita non è valida" 
+        });
     }
 
-    // Validazione telefono
+    // VALIDAZIONE TELEFONO
     const telefonoRegex = /^\+[0-9]+$/;
     if (!telefonoRegex.test(telefono)) {
-        return res.status(400).json({ status: "fail", message: "Il numero di telefono può contenere solo numeri e '+' all'inizio" });
+        return res.status(400).json({ 
+            status: "fail", 
+            message: "Il numero di telefono può contenere solo numeri e '+' all'inizio" 
+        });
     }
 
-    // Genera Slug con nome e cognome
+    // GENERA SLUG CON NOME E COGNOME
     const slug = generateSlug(nome, cognome);
 
-    // Check se il slug esiste gia'
+    // CHECK SE ESISTE GIA IL SLUG
     const checkSlug = "SELECT * FROM medici WHERE slug = ?";
 
     const checkMail = `SELECT email FROM medici`
@@ -218,7 +221,12 @@ const store = (req, res, next) => {
         }
     ) 
 
-
 }
 
-module.exports = { indexMed, showMed, showRev, store }
+// EXPORT
+module.exports = { 
+    indexMed,
+    showMed, 
+    showRev, 
+    store
+}

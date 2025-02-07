@@ -1,13 +1,13 @@
-const express = require("express")
+// DATA
+const express = require("express");
+const router = express.Router();
+const { indexMed, showRev, showMed, store } = require("../controllers/functions");
 
-const { indexMed, showRev, showMed, store } = require("../controllers/functions")
+// ROUTES
+router.get("/:slug/recensioni", showRev);
+router.get("/:slug", showMed);
+router.post("/", store);
+router.get("/", indexMed);
 
-const router = express.Router()
-
-router.get("/:id/recensioni", showRev)
-router.get("/:id", showMed)
-router.post("/", store)
-router.get("/", indexMed)
-
-
+// EXPORT
 module.exports = router;

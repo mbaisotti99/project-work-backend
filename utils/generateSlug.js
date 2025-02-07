@@ -6,6 +6,7 @@ const generateSlug = (nome, cognome) => {
         .replace(/\s+/g, "-"); // Sostituisce spazi con trattini
 };
 
+// EXPORT
 module.exports = {
     generateSlug,
 }

@@ -1,7 +1,8 @@
+// DATA
 const mysql = require("mysql2")
-
 const { PASSWORD, DB_NAME } = process.env
 
+// CONNECTION
 const connection = mysql.createConnection({
     host: "localhost",
     user: "root",
@@ -12,7 +13,7 @@ const connection = mysql.createConnection({
 connection.connect((err) => {
     if (err) throw err;
     console.log("Connesso al DB", DB_NAME);
-
 })
 
-module.exports = connection
+// EXPORT
+module.exports = connection;
