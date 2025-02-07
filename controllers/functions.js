@@ -112,7 +112,7 @@ const showRev = (req, resp, next) => {
 }
 
 // STORE MEDICI
-const store = (req, res, next) => {
+const storeMed = (req, res, next) => {
 
     const { nome, cognome, email, telefono, indirizzo, citta, specializzazione } = req.body;
 
@@ -228,5 +228,5 @@ module.exports = {
     indexMed,
     showMed, 
     showRev, 
-    store
+    storeMed
 }
