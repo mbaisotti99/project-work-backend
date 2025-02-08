@@ -69,7 +69,7 @@ const showMed = (req, res, next) => {
         })
 
     })
-    
+
 }
 
 // SHOW RECENSIONI
@@ -88,12 +88,12 @@ const showRev = (req, resp, next) => {
         JOIN utenti ON utenti.id = recensioni.id_utente
         WHERE medici.slug = ?; 
     `;
-    
+
     connection.query(sql, [slug], (err, recensioni) => {
 
         if (err) {
             return next(new Error("Errore del server"))
-        } 
+        }
 
         if (recensioni.length === 0) {
             return resp.status(404).json({
@@ -106,7 +106,7 @@ const showRev = (req, resp, next) => {
             status: "success",
             data: recensioni,
         });
-        
+
     })
 
 }
@@ -118,51 +118,51 @@ const storeMed = (req, res, next) => {
 
     // VALIDAZIONE TUTTI I CAMPI
     if (!nome || !cognome || !email || !telefono || !indirizzo || !specializzazione) {
-        return res.status(400).json({ 
-            status: "fail", 
-            message: "Tutti i campi sono obbligatori" 
+        return res.status(400).json({
+            status: "fail",
+            message: "Tutti i campi sono obbligatori"
         });
     }
 
     // VALIDAZIONE NOME
     if (nome.length < 3) {
-        return res.status(400).json({ 
-            status: "fail", 
-            message: "Il nome deve avere almeno 3 caratteri" 
+        return res.status(400).json({
+            status: "fail",
+            message: "Il nome deve avere almeno 3 caratteri"
         });
     }
 
     // VALIDAZIONE COGNOME
     if (cognome.length < 3) {
-        return res.status(400).json({ 
-            status: "fail", 
-            message: "Il cognome deve avere almeno 3 caratteri" 
+        return res.status(400).json({
+            status: "fail",
+            message: "Il cognome deve avere almeno 3 caratteri"
         });
     }
 
     // VALIDAZIONE INDIRIZZO
     if (indirizzo.length < 5) {
-        return res.status(400).json({ 
-            status: "fail", 
-            message: "L'indirizzo deve avere almeno 5 caratteri" 
+        return res.status(400).json({
+            status: "fail",
+            message: "L'indirizzo deve avere almeno 5 caratteri"
         });
     }
 
     // VALIDAZIONE EMAIL
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        return res.status(400).json({ 
-            status: "fail", 
-            message: "L'email inserita non è valida" 
+        return res.status(400).json({
+            status: "fail",
+            message: "L'email inserita non è valida"
         });
     }
 
     // VALIDAZIONE TELEFONO
     const telefonoRegex = /^\+[0-9]+$/;
     if (!telefonoRegex.test(telefono)) {
-        return res.status(400).json({ 
-            status: "fail", 
-            message: "Il numero di telefono può contenere solo numeri e '+' all'inizio" 
+        return res.status(400).json({
+            status: "fail",
+            message: "Il numero di telefono può contenere solo numeri e '+' all'inizio"
         });
     }
 
@@ -172,61 +172,55 @@ const storeMed = (req, res, next) => {
     // CHECK SE ESISTE GIA IL SLUG
     const checkSlug = "SELECT * FROM medici WHERE slug = ?";
 
-    const checkMail = `SELECT email FROM medici`
+    const checkMail = "SELECT email FROM medici WHERE email = ?";
 
-    connection.query(checkMail, (err, results) => {
+
+    connection.query(checkMail, [email], (err, results) => {
         if (err) {
-            return res.status(500).json({
-                message: "errore",
-                err: err.stack
-            })
-        } else {
-            results.forEach((curMail) => {
-                if (curMail.email == email) {
-                    return res.status(400).json({
-                        message:"Mail già presente nel sistema"
-                    })
-                } 
-            })
+            return res.status(500).json({ message: "Errore del server", error: err.stack });
         }
-        
+
+        if (results.length > 0) {
+            return res.status(400).json({ message: "Mail già presente nel sistema" });
+        }
+
         // console.log(results);
 
 
-            connection.query(checkSlug, [slug], (err, results) => {
-                if (err) return next(err);
-        
-                if (results.length > 0) {
-            
-                    return res.status(409).json({ 
-                        status: "fail",
-                        message: "Esiste già un medico con questo nome e cognome" 
-                    });
-                }
-        
-                const sql = `
+        connection.query(checkSlug, [slug], (err, results) => {
+            if (err) return next(err);
+
+            if (results.length > 0) {
+
+                return res.status(409).json({
+                    status: "fail",
+                    message: "Esiste già un medico con questo nome e cognome"
+                });
+            }
+
+            const sql = `
                     INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?);
                 `;
-        
-                connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione], (err, results) => {
-                    if (err) return next(err);
-        
-                    return res.status(201).json({
-                        status: "success",
-                        message: "Medico salvato con successo!",
-                    });
+
+            connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione], (err, results) => {
+                if (err) return next(err);
+
+                return res.status(201).json({
+                    status: "success",
+                    message: "Medico salvato con successo!",
                 });
             });
-        }
-    ) 
+        });
+    }
+    )
 
 }
 
 // EXPORT
-module.exports = { 
+module.exports = {
     indexMed,
-    showMed, 
-    showRev, 
+    showMed,
+    showRev,
     storeMed
 }
