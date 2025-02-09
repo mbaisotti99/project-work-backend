@@ -114,7 +114,16 @@ const showRev = (req, resp, next) => {
 // STORE MEDICI
 const storeMed = (req, res, next) => {
 
+    const imageName = req.file.filename;
     const { nome, cognome, email, telefono, indirizzo, citta, specializzazione } = req.body;
+
+    // VALIDAZIONE FILE
+    // if (!req.file || !req.file.filename) {
+    //     return res.status(400).json({
+    //         status: "fail",
+    //         message: "An image is required"
+    //     });
+    // }
 
     // VALIDAZIONE TUTTI I CAMPI
     if (!nome || !cognome || !email || !telefono || !indirizzo || !specializzazione) {
@@ -176,6 +185,7 @@ const storeMed = (req, res, next) => {
 
 
     connection.query(checkMail, [email], (err, results) => {
+
         if (err) {
             return res.status(500).json({ message: "Errore del server", error: err.stack });
         }
@@ -184,10 +194,8 @@ const storeMed = (req, res, next) => {
             return res.status(400).json({ message: "Mail già presente nel sistema" });
         }
 
-        // console.log(results);
-
-
         connection.query(checkSlug, [slug], (err, results) => {
+
             if (err) return next(err);
 
             if (results.length > 0) {
@@ -199,21 +207,24 @@ const storeMed = (req, res, next) => {
             }
 
             const sql = `
-                    INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                    INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, image)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                 `;
 
-            connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione], (err, results) => {
+            connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, imageName], (err, results) => {
+
                 if (err) return next(err);
 
                 return res.status(201).json({
                     status: "success",
                     message: "Medico salvato con successo!",
                 });
+
             });
+
         });
-    }
-    )
+
+    })
 
 }
 
