@@ -7,7 +7,7 @@ const upload = require('../middleware/uploadImage');
 // ROUTES
 router.get("/:slug/recensioni", showRev);
 router.get("/:slug", showMed);
-router.post("/", upload.single("image"), storeMed);
+router.post("/", upload.single("immagine"), storeMed);
 router.get("/", indexMed);
 
 // EXPORT

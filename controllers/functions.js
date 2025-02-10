@@ -207,7 +207,7 @@ const storeMed = (req, res, next) => {
             }
 
             const sql = `
-                    INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, image)
+                    INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, immagine)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                 `;
 
