@@ -228,10 +228,94 @@ const storeMed = (req, res, next) => {
 
 }
 
+// STORE REVIEW
+const storeRev = (req, res, next) => {
+
+    const { slug } = req.params;
+    const { username, recensione, voto } = req.body;
+
+    // VALIDAZIONE INPUT
+    if (!slug || !username || !recensione || !voto) {
+
+        return res.status(400).json({
+            status: "fail",
+            message: "Tutti i campi sono obbligatori"
+        });
+
+    }
+
+    // VALIDAZIONE VOTO
+    if (voto < 1 || voto > 5) {
+
+        return res.status(400).json({
+            status: "fail",
+            message: "Il voto deve essere compreso tra 1 e 5"
+        });
+
+    }
+
+    const sqlFindUser = `SELECT id FROM utenti WHERE nome_utente = ?`;
+
+    connection.query(sqlFindUser, [username], (err, resultsUser) => {
+
+        if (err) return next(new Error("Errore del server"));
+
+        if (resultsUser.length === 0) {
+
+            return res.status(404).json({
+                status: "fail",
+                message: "Utente non trovato"
+            });
+
+        }
+
+        const id_utente = resultsUser[0].id;
+
+        const sqlFindMedico = `SELECT id FROM medici WHERE slug = ?`;
+
+        connection.query(sqlFindMedico, [slug], (err, resultsMedico) => {
+
+            if (err) return next(new Error("Errore del server"));
+
+            if (resultsMedico.length === 0) {
+
+                return res.status(404).json({
+                    status: "fail",
+                    message: "Medico non trovato"
+                });
+
+            }
+
+            const id_medico = resultsMedico[0].id;
+
+            const sqlInsertReview = `
+                INSERT INTO recensioni (id_medico, id_utente, recensione, voto)
+                VALUES (?, ?, ?, ?);
+            `;
+
+            connection.query(sqlInsertReview, [id_medico, id_utente, recensione, voto], (err, result) => {
+
+                if (err) return next(new Error("Errore del server"));
+
+                return res.status(201).json({
+                    status: "success",
+                    message: "Recensione aggiunta con successo!"
+                });
+
+            });
+
+        });
+
+    });
+    
+};
+
+
 // EXPORT
 module.exports = {
     indexMed,
     showMed,
     showRev,
-    storeMed
+    storeMed,
+    storeRev,
 }

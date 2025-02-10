@@ -1,14 +1,17 @@
 // DATA
 const express = require("express");
 const router = express.Router();
-const { indexMed, showRev, showMed, storeMed } = require("../controllers/functions");
+const { indexMed, showRev, showMed, storeMed, storeRev } = require("../controllers/functions");
 const upload = require('../middleware/uploadImage');
 
-// ROUTES
+// ROUTES GET
 router.get("/:slug/recensioni", showRev);
 router.get("/:slug", showMed);
-router.post("/", upload.single("immagine"), storeMed);
 router.get("/", indexMed);
+
+// ROUTES POST
+router.post("/:slug/recensioni", storeRev);
+router.post("/", upload.single("immagine"), storeMed);
 
 // EXPORT
 module.exports = router;
