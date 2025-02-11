@@ -108,13 +108,11 @@ const showRev = (req, resp, next) => {
 
     const sql = `    
         SELECT  medici.nome AS nome_medico,
-                medici.cognome AS cognome_medico, 
-                utenti.nome_utente AS utente,
-                recensioni.recensione, 
-                recensioni.voto
+        medici.cognome AS cognome_medico, 
+        recensioni.recensione, 
+        recensioni.voto
         FROM recensioni
         JOIN medici ON medici.id = recensioni.id_medico
-        JOIN utenti ON utenti.id = recensioni.id_utente
         WHERE medici.slug = ?; 
     `;
 
