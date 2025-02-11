@@ -7,24 +7,40 @@ const indexMed = (req, resp, next) => {
 
     const filters = req.query;
 
-    let sql = ` SELECT * FROM medici `
+    let sql = `
+        SELECT 
+            medici.id,
+            medici.slug,
+            medici.nome,
+            medici.cognome,
+            medici.email,
+            medici.telefono,
+            medici.indirizzo,
+            medici.citta,
+            medici.immagine,
+            specializzazioni.nome_specializzazione AS specializzazione
+        FROM medici
+        JOIN specializzazioni ON medici.id_specializzazione = specializzazioni.id
+    `;
 
     const params = [];
     const conditions = [];
 
     if (filters.search) {
-        conditions.push("nome LIKE ? OR cognome LIKE ?");
+        conditions.push("medici.nome LIKE ? OR medici.cognome LIKE ?");
         params.push(`%${filters.search}%`, `%${filters.search}%`);
     }
 
     if (filters.specializzazione) {
-        conditions.push("specializzazione = ?");
+        conditions.push("specializzazioni.nome_specializzazione = ?");
         params.push(filters.specializzazione);
     }
 
     if (conditions.length > 0) {
         sql += ` WHERE ${conditions.join(" AND ")}`;
     }
+
+    sql += ` ORDER BY medici.id`;
 
     connection.query(sql, params, (err, docs) => {
 
@@ -44,8 +60,22 @@ const indexMed = (req, resp, next) => {
 // SHOW MEDICI
 const showMed = (req, res, next) => {
 
-    const sql = ` SELECT * FROM medici
-                  WHERE slug = ? ; `;
+    const sql = `
+        SELECT 
+            medici.id,
+            medici.slug,
+            medici.nome,
+            medici.cognome,
+            medici.email,
+            medici.telefono,
+            medici.indirizzo,
+            medici.citta,
+            medici.immagine,
+            specializzazioni.nome_specializzazione AS specializzazione
+        FROM medici
+        JOIN specializzazioni ON medici.id_specializzazione = specializzazioni.id
+        WHERE medici.slug = ?;
+    `;
 
     const slug = req.params.slug;
 
@@ -54,18 +84,17 @@ const showMed = (req, res, next) => {
         if (err) return next(new Error("Internal Server Error"));
 
         if (medici.length === 0) {
+
             return res.status(404).json({
                 status: "fail",
                 message: "Dottore non trovato",
             });
+            
         }
 
         return res.status(200).json({
             status: "success",
-            data: {
-                status: "success",
-                data: medici,
-            }
+            data: medici,   
         })
 
     })
@@ -121,87 +150,105 @@ const storeMed = (req, res, next) => {
 
     // VALIDAZIONE FILE
     if (!req.file || !req.file.filename) {
+
         return res.status(400).json({
             status: "fail",
             message: "An image is required"
         });
+
     }
 
     // VALIDAZIONE TUTTI I CAMPI
     if (!nome || !cognome || !email || !telefono || !indirizzo || !citta || !specializzazione) {
+       
         return res.status(400).json({
             status: "fail",
             message: "Tutti i campi sono obbligatori"
         });
+
     }
 
     // VALIDAZIONE NOME
     if (nome.length < 3) {
+
         return res.status(400).json({
             status: "fail",
             message: "Il nome deve avere almeno 3 caratteri"
         });
+
     }
 
     // VALIDAZIONE COGNOME
     if (cognome.length < 3) {
+
         return res.status(400).json({
             status: "fail",
             message: "Il cognome deve avere almeno 3 caratteri"
         });
+
     }
 
     // VALIDAZIONE INDIRIZZO
     if (indirizzo.length < 5) {
+
         return res.status(400).json({
             status: "fail",
             message: "L'indirizzo deve avere almeno 5 caratteri"
         });
+
     }
 
     // VALIDAZIONE EMAIL
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!emailRegex.test(email)) {
+
         return res.status(400).json({
             status: "fail",
             message: "L'email inserita non è valida"
         });
+
     }
 
     // VALIDAZIONE TELEFONO
     const telefonoRegex = /^\+[0-9]+$/;
+
     if (!telefonoRegex.test(telefono)) {
+
         return res.status(400).json({
             status: "fail",
             message: "Il numero di telefono può contenere solo numeri e '+' all'inizio"
         });
+
     }
 
     // RECUPERA NOME SPECIALIZZAZIONE
     const getSpecializzazioneQuery = "SELECT nome_specializzazione FROM specializzazioni WHERE id = ?";
 
     connection.query(getSpecializzazioneQuery, [specializzazione], (err, results) => {
+        
         if (err) return next(err);
 
         if (results.length === 0) {
+
             return res.status(400).json({
                 status: "fail",
                 message: "Specializzazione non trovata"
             });
+
         }
 
         const nome_specializzazione = results[0].nome_specializzazione;
-        console.log("Specializzazione ottenuta:", nome_specializzazione);
 
         // GENERA SLUG
         const slug = generateSlug(cognome, nome_specializzazione);
-        console.log("Slug generato:", slug)
 
         // VERIFICA SE LO SLUG E' GIA' PRESENTE
         const checkSlug = "SELECT * FROM medici WHERE slug = ?";
         const checkMail = "SELECT email FROM medici WHERE email = ?";
 
         connection.query(checkMail, [email], (err, results) => {
+
             if (err) return res.status(500).json({ message: "Errore del server", error: err.stack });
 
             if (results.length > 0) {
@@ -212,10 +259,12 @@ const storeMed = (req, res, next) => {
                 if (err) return next(err);
 
                 if (results.length > 0) {
+
                     return res.status(409).json({
                         status: "fail",
                         message: "Esiste già un medico con questo nome e specializzazione"
                     });
+
                 }
 
                 // INSERIMENTO MEDICO
@@ -225,12 +274,14 @@ const storeMed = (req, res, next) => {
                 `;
 
                 connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, imageName], (err, results) => {
+                    
                     if (err) return next(err);
 
                     return res.status(201).json({
                         status: "success",
                         message: "Medico salvato con successo!",
                     });
+
                 });
 
             });
