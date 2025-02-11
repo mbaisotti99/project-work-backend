@@ -5,16 +5,10 @@ const errorHandler = require("./middleware/errorHandler");
 const cors = require("cors")
 const app = express();
 const port = process.env.SERVER_PORT;
-const cors = require('cors');
-
-// MIDDLEWARE CORS
-app.use(cors({
-    origin: process.env.FRONTEND_URL
-}))
 
 // CORS 
 app.use(cors({
-    origin: "http://localhost:5173"
+    origin: process.env.FRONTEND_URL
 }))
 
 // EXPRESS JSON
