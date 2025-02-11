@@ -2,8 +2,14 @@
 const express = require('express');
 const routes = require("./routes/routes");
 const errorHandler = require("./middleware/errorHandler");
+const cors = require("cors")
 const app = express();
 const port = process.env.SERVER_PORT;
+
+// CORS 
+app.use(cors({
+    origin: "http://localhost:5173"
+}))
 
 // EXPRESS JSON
 app.use(express.json());
