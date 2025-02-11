@@ -96,10 +96,12 @@ const showRev = (req, resp, next) => {
         }
 
         if (recensioni.length === 0) {
+
             return resp.status(404).json({
                 status: "fail",
                 message: "Nessuna recensione trovata per questo medico",
             });
+
         }
 
         return resp.status(200).json({
@@ -118,15 +120,15 @@ const storeMed = (req, res, next) => {
     const { nome, cognome, email, telefono, indirizzo, citta, specializzazione } = req.body;
 
     // VALIDAZIONE FILE
-    // if (!req.file || !req.file.filename) {
-    //     return res.status(400).json({
-    //         status: "fail",
-    //         message: "An image is required"
-    //     });
-    // }
+    if (!req.file || !req.file.filename) {
+        return res.status(400).json({
+            status: "fail",
+            message: "An image is required"
+        });
+    }
 
     // VALIDAZIONE TUTTI I CAMPI
-    if (!nome || !cognome || !email || !telefono || !indirizzo || !specializzazione) {
+    if (!nome || !cognome || !email || !telefono || !indirizzo || !citta || !specializzazione) {
         return res.status(400).json({
             status: "fail",
             message: "Tutti i campi sono obbligatori"
@@ -175,56 +177,67 @@ const storeMed = (req, res, next) => {
         });
     }
 
-    // GENERA SLUG CON NOME E COGNOME
-    const slug = generateSlug(nome, cognome);
+    // RECUPERA NOME SPECIALIZZAZIONE
+    const getSpecializzazioneQuery = "SELECT nome_specializzazione FROM specializzazioni WHERE id = ?";
 
-    // CHECK SE ESISTE GIA IL SLUG
-    const checkSlug = "SELECT * FROM medici WHERE slug = ?";
+    connection.query(getSpecializzazioneQuery, [specializzazione], (err, results) => {
+        if (err) return next(err);
 
-    const checkMail = "SELECT email FROM medici WHERE email = ?";
-
-
-    connection.query(checkMail, [email], (err, results) => {
-
-        if (err) {
-            return res.status(500).json({ message: "Errore del server", error: err.stack });
+        if (results.length === 0) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Specializzazione non trovata"
+            });
         }
 
-        if (results.length > 0) {
-            return res.status(400).json({ message: "Mail già presente nel sistema" });
-        }
+        const nome_specializzazione = results[0].nome_specializzazione;
+        console.log("Specializzazione ottenuta:", nome_specializzazione);
 
-        connection.query(checkSlug, [slug], (err, results) => {
+        // GENERA SLUG
+        const slug = generateSlug(cognome, nome_specializzazione);
+        console.log("Slug generato:", slug)
 
-            if (err) return next(err);
+        // VERIFICA SE LO SLUG E' GIA' PRESENTE
+        const checkSlug = "SELECT * FROM medici WHERE slug = ?";
+        const checkMail = "SELECT email FROM medici WHERE email = ?";
+
+        connection.query(checkMail, [email], (err, results) => {
+            if (err) return res.status(500).json({ message: "Errore del server", error: err.stack });
 
             if (results.length > 0) {
-
-                return res.status(409).json({
-                    status: "fail",
-                    message: "Esiste già un medico con questo nome e cognome"
-                });
+                return res.status(400).json({ message: "Mail già presente nel sistema" });
             }
 
-            const sql = `
-                    INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, immagine)
+            connection.query(checkSlug, [slug], (err, results) => {
+                if (err) return next(err);
+
+                if (results.length > 0) {
+                    return res.status(409).json({
+                        status: "fail",
+                        message: "Esiste già un medico con questo nome e specializzazione"
+                    });
+                }
+
+                // INSERIMENTO MEDICO
+                const sql = `
+                    INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, id_specializzazione, immagine)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                 `;
 
-            connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, imageName], (err, results) => {
+                connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, imageName], (err, results) => {
+                    if (err) return next(err);
 
-                if (err) return next(err);
-
-                return res.status(201).json({
-                    status: "success",
-                    message: "Medico salvato con successo!",
+                    return res.status(201).json({
+                        status: "success",
+                        message: "Medico salvato con successo!",
+                    });
                 });
 
             });
 
         });
 
-    })
+    });
 
 }
 
