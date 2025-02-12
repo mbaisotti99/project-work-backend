@@ -89,12 +89,12 @@ const showMed = (req, res, next) => {
                 status: "fail",
                 message: "Dottore non trovato",
             });
-            
+
         }
 
         return res.status(200).json({
             status: "success",
-            data: medici,   
+            data: medici,
         })
 
     })
@@ -107,13 +107,17 @@ const showRev = (req, resp, next) => {
     const slug = req.params.slug;
 
     const sql = `    
-        SELECT  medici.nome AS nome_medico,
-        medici.cognome AS cognome_medico, 
-        recensioni.recensione, 
-        recensioni.voto
+        SELECT 
+            medici.nome AS nome_medico,
+            medici.cognome AS cognome_medico, 
+            recensioni.recensione, 
+            recensioni.voto,
+            recensioni.nome_utente,
+            recensioni.email_utente
         FROM recensioni
         JOIN medici ON medici.id = recensioni.id_medico
-        WHERE medici.slug = ?; 
+        WHERE medici.slug = ?
+        ORDER BY recensioni.id DESC; 
     `;
 
     connection.query(sql, [slug], (err, recensioni) => {
@@ -123,12 +127,10 @@ const showRev = (req, resp, next) => {
         }
 
         if (recensioni.length === 0) {
-
             return resp.status(404).json({
                 status: "fail",
                 message: "Nessuna recensione trovata per questo medico",
             });
-
         }
 
         return resp.status(200).json({
@@ -136,9 +138,9 @@ const showRev = (req, resp, next) => {
             data: recensioni,
         });
 
-    })
+    });
 
-}
+};
 
 // STORE MEDICI
 const storeMed = (req, res, next) => {
@@ -158,7 +160,7 @@ const storeMed = (req, res, next) => {
 
     // VALIDAZIONE TUTTI I CAMPI
     if (!nome || !cognome || !email || !telefono || !indirizzo || !citta || !specializzazione) {
-       
+
         return res.status(400).json({
             status: "fail",
             message: "Tutti i campi sono obbligatori"
@@ -224,7 +226,7 @@ const storeMed = (req, res, next) => {
     const getSpecializzazioneQuery = "SELECT nome_specializzazione FROM specializzazioni WHERE id = ?";
 
     connection.query(getSpecializzazioneQuery, [specializzazione], (err, results) => {
-        
+
         if (err) return next(err);
 
         if (results.length === 0) {
@@ -238,11 +240,7 @@ const storeMed = (req, res, next) => {
 
         const nome_specializzazione = results[0].nome_specializzazione;
 
-        // GENERA SLUG
-        const slug = generateSlug(cognome, nome_specializzazione);
-
-        // VERIFICA SE LO SLUG E' GIA' PRESENTE
-        const checkSlug = "SELECT * FROM medici WHERE slug = ?";
+        // CHECK EMAIL
         const checkMail = "SELECT email FROM medici WHERE email = ?";
 
         connection.query(checkMail, [email], (err, results) => {
@@ -253,15 +251,42 @@ const storeMed = (req, res, next) => {
                 return res.status(400).json({ message: "Mail già presente nel sistema" });
             }
 
-            connection.query(checkSlug, [slug], (err, results) => {
+            // GENERAZIONE SLUG BASE
+            let baseSlug = generateSlug(cognome, nome_specializzazione);
+
+            // CONTROLLO SLUG
+            const checkSimilarSlugs = "SELECT slug FROM medici WHERE slug LIKE ?";
+
+            connection.query(checkSimilarSlugs, [`${baseSlug}%`], (err, slugResults) => {
+
                 if (err) return next(err);
 
-                if (results.length > 0) {
+                let finalSlug = baseSlug;
 
-                    return res.status(409).json({
-                        status: "fail",
-                        message: "Esiste già un medico con questo nome e specializzazione"
+                // SE SLUG ESISTE AGGIUNGE NUMERO
+                if (slugResults.length > 0) {
+
+                    let maxNumber = 0;
+
+                    slugResults.forEach(result => {
+
+                        const match = result.slug.match(/-(\d+)$/); // result.slug.match(/-(\d+)$/) cerca un pattern alla fine dello slug
+                                                                    // -(\d+)$ significa:
+                                                                    // - un trattino (-)
+                                                                    // (\d+) uno o più numeri
+                                                                    // $ la fine della stringa
+                        if (match) {
+
+                            const num = parseInt(match[1]);
+
+                            if (num > maxNumber) {
+                                maxNumber = num;
+                            }
+
+                        }
                     });
+
+                    finalSlug = `${baseSlug}-${maxNumber + 1}`;
 
                 }
 
@@ -271,8 +296,8 @@ const storeMed = (req, res, next) => {
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                 `;
 
-                connection.query(sql, [slug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, imageName], (err, results) => {
-                    
+                connection.query(sql, [finalSlug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, imageName], (err, results) => {
+
                     if (err) return next(err);
 
                     return res.status(201).json({
@@ -294,68 +319,73 @@ const storeMed = (req, res, next) => {
 const storeRev = (req, res, next) => {
 
     const { slug } = req.params;
-    const { username, recensione, voto } = req.body;
+    const { nome_utente, email_utente, recensione, voto } = req.body;
 
     // VALIDAZIONE INPUT
-    if (!slug || !username || !recensione || !voto) {
-
+    if (!slug || !nome_utente || !email_utente || !recensione || !voto) {
         return res.status(400).json({
             status: "fail",
             message: "Tutti i campi sono obbligatori"
         });
-
     }
 
     // VALIDAZIONE VOTO
     if (voto < 1 || voto > 5) {
-
         return res.status(400).json({
             status: "fail",
             message: "Il voto deve essere compreso tra 1 e 5"
         });
-
     }
 
-    const sqlFindUser = `SELECT id FROM utenti WHERE nome_utente = ?`;
+    // VALIDAZIONE EMAIL
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email_utente)) {
+        return res.status(400).json({
+            status: "fail",
+            message: "L'email inserita non è valida"
+        });
+    }
 
-    connection.query(sqlFindUser, [username], (err, resultsUser) => {
+    // CERCA MEDICO CON SLUG
+    const sqlFindMedico = `SELECT id FROM medici WHERE slug = ?`;
+
+    connection.query(sqlFindMedico, [slug], (err, resultsMedico) => {
 
         if (err) return next(new Error("Errore del server"));
 
-        if (resultsUser.length === 0) {
-
+        if (resultsMedico.length === 0) {
             return res.status(404).json({
                 status: "fail",
-                message: "Utente non trovato"
+                message: "Medico non trovato"
             });
-
         }
 
-        const id_utente = resultsUser[0].id;
+        const id_medico = resultsMedico[0].id;
 
-        const sqlFindMedico = `SELECT id FROM medici WHERE slug = ?`;
+        // CONTROLLO SE GIA' RECENSITO
+        const checkExistingReview = `
+            SELECT id FROM recensioni 
+            WHERE id_medico = ? AND email_utente = ?
+        `;
 
-        connection.query(sqlFindMedico, [slug], (err, resultsMedico) => {
+        connection.query(checkExistingReview, [id_medico, email_utente], (err, existingReview) => {
 
             if (err) return next(new Error("Errore del server"));
 
-            if (resultsMedico.length === 0) {
-
-                return res.status(404).json({
+            if (existingReview.length > 0) {
+                return res.status(400).json({
                     status: "fail",
-                    message: "Medico non trovato"
+                    message: "Hai già recensito questo medico"
                 });
-
             }
 
-            const id_medico = resultsMedico[0].id;
-
+            // INSERISCI RECENSIONE
             const sqlInsertReview = `
-                INSERT INTO recensioni (id_medico, id_utente, recensione, voto)
-                VALUES (?, ?, ?, ?);
+                INSERT INTO recensioni (id_medico, nome_utente, email_utente, recensione, voto)
+                VALUES (?, ?, ?, ?, ?);
             `;
 
-            connection.query(sqlInsertReview, [id_medico, id_utente, recensione, voto], (err, result) => {
+            connection.query(sqlInsertReview, [id_medico, nome_utente, email_utente, recensione, voto], (err, result) => {
 
                 if (err) return next(new Error("Errore del server"));
 
@@ -369,7 +399,7 @@ const storeRev = (req, res, next) => {
         });
 
     });
-    
+
 };
 
 
