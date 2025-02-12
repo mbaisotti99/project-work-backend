@@ -2,6 +2,7 @@
 const connection = require("../data/doc_db")
 const { generateSlug } = require("../utils/generateSlug")
 
+
 // INDEX MEDICI
 const indexMed = (req, resp, next) => {
 
@@ -271,10 +272,10 @@ const storeMed = (req, res, next) => {
                     slugResults.forEach(result => {
 
                         const match = result.slug.match(/-(\d+)$/); // result.slug.match(/-(\d+)$/) cerca un pattern alla fine dello slug
-                                                                    // -(\d+)$ significa:
-                                                                    // - un trattino (-)
-                                                                    // (\d+) uno o più numeri
-                                                                    // $ la fine della stringa
+                        // -(\d+)$ significa:
+                        // - un trattino (-)
+                        // (\d+) uno o più numeri
+                        // $ la fine della stringa
                         if (match) {
 
                             const num = parseInt(match[1]);
@@ -403,11 +404,60 @@ const storeRev = (req, res, next) => {
 };
 
 
-// EXPORT
-module.exports = {
-    indexMed,
-    showMed,
-    showRev,
-    storeMed,
-    storeRev,
+
+const nodemailer = require("nodemailer")
+
+let transport = nodemailer.createTransport({
+    host: "sandbox.smtp.mailtrap.io",
+    port: 2525,
+    auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PSW
+    }
+})
+
+
+const sendMail = (req, resp, next) => {
+    const { slug } = req.params
+    const { subject, text } = req.body;
+
+    const sql = `
+        SELECT email FROM medici WHERE slug = ?
+    `
+    connection.query(sql, [slug], (err, result) => {
+
+        console.log(slug);
+        console.log(result);
+        
+
+        try {
+            transport.sendMail({
+                from: "gruppo7@esempio.it", // Email mittente
+                to: result[0].email, // Email destinatario
+                subject, // Oggetto email
+                text, // Testo email
+            });
+            return resp.status(200).json({
+                message:`Mail inviata a ${result[0].email}`
+            })
+        }
+        catch (err) {
+            resp.status(500).json({
+                message: "Errore del server",
+                errore: err.stack
+            })
+        }
+    });
 }
+
+
+
+    // EXPORT
+    module.exports = {
+        indexMed,
+        showMed,
+        showRev,
+        storeMed,
+        storeRev,
+        sendMail,
+    }
