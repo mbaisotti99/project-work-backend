@@ -448,7 +448,7 @@ const sendMail = (req, resp, next) => {
         }
     } else {
         return resp.status(500).json({
-            message:"Rlevati campi vuoti"
+            message:"Rilevati campi vuoti"
         })
     }
     });
