@@ -428,7 +428,8 @@ const sendMail = (req, resp, next) => {
         console.log(result);
         
 
-        try {
+        if (subject && text){
+            try {
             transport.sendMail({
                 from: "gruppo7@esempio.it", // Email mittente
                 to: result[0].email, // Email destinatario
@@ -445,6 +446,11 @@ const sendMail = (req, resp, next) => {
                 errore: err.stack
             })
         }
+    } else {
+        return resp.status(500).json({
+            message:"Rlevati campi vuoti"
+        })
+    }
     });
 }
 
