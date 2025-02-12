@@ -454,6 +454,18 @@ const sendMail = (req, resp, next) => {
     });
 }
 
+// CERCA SPECIALIZZAZIONI
+const getSpecializzazioni = (req, res, next) => {
+    const sql = "SELECT * FROM specializzazioni";
+    
+    connection.query(sql, (err, results) => {
+        if (err) {
+            return next(new Error("Errore del server"));
+        }
+        
+        res.status(200).json(results);
+    });
+};
 
 
     // EXPORT
@@ -464,4 +476,5 @@ const sendMail = (req, resp, next) => {
         storeMed,
         storeRev,
         sendMail,
+        getSpecializzazioni,
     }
