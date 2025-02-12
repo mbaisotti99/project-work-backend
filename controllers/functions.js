@@ -72,35 +72,33 @@ const showMed = (req, res, next) => {
             medici.indirizzo,
             medici.citta,
             medici.immagine,
-            specializzazioni.nome_specializzazione AS specializzazione
+            specializzazioni.nome_specializzazione AS specializzazione,
+            ROUND(COALESCE(AVG(recensioni.voto), 0), 1) AS media_voti
         FROM medici
         JOIN specializzazioni ON medici.id_specializzazione = specializzazioni.id
-        WHERE medici.slug = ?;
-    `;
+        LEFT JOIN recensioni ON medici.id = recensioni.id_medico
+        WHERE medici.slug = ?
+        GROUP BY medici.id ;`
 
     const slug = req.params.slug;
 
     connection.query(sql, [slug], (err, medici) => {
-
         if (err) return next(new Error("Internal Server Error"));
 
         if (medici.length === 0) {
-
             return res.status(404).json({
                 status: "fail",
                 message: "Dottore non trovato",
             });
-
         }
 
         return res.status(200).json({
             status: "success",
-            data: medici,
-        })
+            data: medici[0],
+        });
+    });
 
-    })
-
-}
+};
 
 // SHOW RECENSIONI
 const showRev = (req, resp, next) => {
