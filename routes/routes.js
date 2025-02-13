@@ -1,12 +1,13 @@
 // DATA
 const express = require("express");
 const router = express.Router();
-const { indexMed, showRev, showMed, storeMed, storeRev, sendMail, getSpecializzazioni, getLatestReviews, getTopDoctors } = require("../controllers/functions");
+const { indexMed, showRev, showMed, storeMed, storeRev, sendMail, getSpecializzazioni, getLatestReviews, getTopDoctors, getCities } = require("../controllers/functions");
 const upload = require('../middleware/uploadImage');
 
 // ROUTES GET
 router.get("/", indexMed);
 router.get("/specializzazioni", getSpecializzazioni);
+router.get("/citta", getCities);
 router.get("/top", getTopDoctors);
 router.get("/recensioni/recenti", getLatestReviews);
 router.get("/:slug", showMed);

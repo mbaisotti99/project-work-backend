@@ -37,6 +37,11 @@ const indexMed = (req, resp, next) => {
         params.push(filters.specializzazione);
     }
 
+    if (filters.citta) {
+        conditions.push("medici.citta LIKE ?");
+        params.push(`%${filters.citta}%`);
+    }
+
     if (conditions.length > 0) {
         sql += ` WHERE ${conditions.join(" AND ")}`;
     }
@@ -470,6 +475,22 @@ const getSpecializzazioni = (req, res, next) => {
     });
 };
 
+// CERCA CITTA
+const getCities = (req, res, next) => {
+    const sql = `
+        SELECT DISTINCT citta 
+        FROM medici 
+        ORDER BY citta
+    `;
+    
+    connection.query(sql, (err, results) => {
+        if (err) {
+            return next(new Error("Errore del server"));
+        }
+        res.status(200).json(results);
+    });
+};
+
 // ULTIME 10 RECENSIONI
 const getLatestReviews = (req, res, next) => {
     const sql = `
@@ -531,4 +552,5 @@ module.exports = {
     getSpecializzazioni,
     getLatestReviews,
     getTopDoctors,
+    getCities,
 }
