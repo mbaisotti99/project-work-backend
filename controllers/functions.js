@@ -424,9 +424,12 @@ const sendMail = (req, resp, next) => {
     `
     connection.query(sql, [slug], (err, result) => {
 
-        console.log(slug);
-        console.log(result);
         
+        if (Array.from(subject).length < 3 || Array.from(text).length < 3) {
+            return resp.status(500).json({
+                message:"I campi devono contenere almeno 3 caratteri"
+            })
+        }
 
         if (subject && text){
             try {
@@ -448,9 +451,10 @@ const sendMail = (req, resp, next) => {
         }
     } else {
         return resp.status(500).json({
-            message:"Rilevati campi vuoti"
+            message:"I campi non devono essere vuoti"
         })
-    }
+    } 
+
     });
 }
 
