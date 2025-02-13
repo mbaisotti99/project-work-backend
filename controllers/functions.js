@@ -467,6 +467,55 @@ const getSpecializzazioni = (req, res, next) => {
     });
 };
 
+// ULTIME 10 RECENSIONI
+const getLatestReviews = (req, res, next) => {
+    const sql = `
+        SELECT 
+            recensioni.*,
+            medici.nome as nome_medico,
+            medici.cognome as cognome_medico,
+            medici.slug as medico_slug,
+            specializzazioni.nome_specializzazione
+        FROM recensioni
+        JOIN medici ON recensioni.id_medico = medici.id
+        JOIN specializzazioni ON medici.id_specializzazione = specializzazioni.id
+        ORDER BY recensioni.id DESC
+        LIMIT 10
+    `;
+
+    connection.query(sql, (err, results) => {
+        if (err) {
+            return next(new Error("Errore del server"));
+        }
+        res.status(200).json(results);
+    });
+};
+
+// TOP 10 MEDICI
+const getTopDoctors = (req, res, next) => {
+    const sql = `
+        SELECT 
+            medici.*,
+            specializzazioni.nome_specializzazione,
+            ROUND(AVG(recensioni.voto), 1) as media_voti,
+            COUNT(recensioni.id) as numero_recensioni
+        FROM medici
+        JOIN specializzazioni ON medici.id_specializzazione = specializzazioni.id
+        LEFT JOIN recensioni ON medici.id = recensioni.id_medico
+        GROUP BY medici.id
+        HAVING numero_recensioni > 0
+        ORDER BY media_voti DESC, numero_recensioni DESC
+        LIMIT 10
+    `;
+
+    connection.query(sql, (err, results) => {
+        if (err) {
+            return next(new Error("Errore del server"));
+        }
+        res.status(200).json(results);
+    });
+};
+
 
     // EXPORT
     module.exports = {
@@ -477,4 +526,6 @@ const getSpecializzazioni = (req, res, next) => {
         storeRev,
         sendMail,
         getSpecializzazioni,
+        getLatestReviews,
+        getTopDoctors,
     }
