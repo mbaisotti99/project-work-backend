@@ -424,15 +424,18 @@ const sendMail = (req, resp, next) => {
     `
     connection.query(sql, [slug], (err, result) => {
 
-        
-        if (Array.from(subject).length < 3 || Array.from(text).length < 3) {
+        if (!subject || !text) {
             return resp.status(500).json({
-                message:"I campi devono contenere almeno 3 caratteri"
+                message: "I campi non devono essere vuoti"
+            })
+        } else if (Array.from(subject).length < 3 || Array.from(text).length < 3) {
+            return resp.status(500).json({
+                message: "I campi devono contenere almeno 3 caratteri"
             })
         }
 
-        if (subject && text){
-            try {
+
+        try {
             transport.sendMail({
                 from: "gruppo7@esempio.it", // Email mittente
                 to: result[0].email, // Email destinatario
@@ -440,7 +443,7 @@ const sendMail = (req, resp, next) => {
                 text, // Testo email
             });
             return resp.status(200).json({
-                message:`Mail inviata a ${result[0].email}`
+                message: `Mail inviata a ${result[0].email}`
             })
         }
         catch (err) {
@@ -449,11 +452,7 @@ const sendMail = (req, resp, next) => {
                 errore: err.stack
             })
         }
-    } else {
-        return resp.status(500).json({
-            message:"I campi non devono essere vuoti"
-        })
-    } 
+
 
     });
 }
@@ -461,12 +460,12 @@ const sendMail = (req, resp, next) => {
 // CERCA SPECIALIZZAZIONI
 const getSpecializzazioni = (req, res, next) => {
     const sql = "SELECT * FROM specializzazioni";
-    
+
     connection.query(sql, (err, results) => {
         if (err) {
             return next(new Error("Errore del server"));
         }
-        
+
         res.status(200).json(results);
     });
 };
@@ -521,15 +520,15 @@ const getTopDoctors = (req, res, next) => {
 };
 
 
-    // EXPORT
-    module.exports = {
-        indexMed,
-        showMed,
-        showRev,
-        storeMed,
-        storeRev,
-        sendMail,
-        getSpecializzazioni,
-        getLatestReviews,
-        getTopDoctors,
-    }
+// EXPORT
+module.exports = {
+    indexMed,
+    showMed,
+    showRev,
+    storeMed,
+    storeRev,
+    sendMail,
+    getSpecializzazioni,
+    getLatestReviews,
+    getTopDoctors,
+}
