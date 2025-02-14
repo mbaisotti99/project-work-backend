@@ -504,7 +504,7 @@ const getLatestReviews = (req, res, next) => {
         JOIN medici ON recensioni.id_medico = medici.id
         JOIN specializzazioni ON medici.id_specializzazione = specializzazioni.id
         ORDER BY recensioni.id DESC
-        LIMIT 10
+        LIMIT 5
     `;
 
     connection.query(sql, (err, results) => {
