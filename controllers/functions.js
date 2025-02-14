@@ -77,6 +77,7 @@ const showMed = (req, res, next) => {
             medici.indirizzo,
             medici.citta,
             medici.immagine,
+            medici.descrizione,
             specializzazioni.nome_specializzazione AS specializzazione,
             ROUND(COALESCE(AVG(recensioni.voto), 0), 1) AS media_voti
         FROM medici
@@ -117,7 +118,8 @@ const showRev = (req, resp, next) => {
             recensioni.recensione, 
             recensioni.voto,
             recensioni.nome_utente,
-            recensioni.email_utente
+            recensioni.email_utente,
+            recensioni.data
         FROM recensioni
         JOIN medici ON medici.id = recensioni.id_medico
         WHERE medici.slug = ?
