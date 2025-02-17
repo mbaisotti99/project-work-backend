@@ -89,6 +89,7 @@ const showMed = (req, res, next) => {
     const slug = req.params.slug;
 
     connection.query(sql, [slug], (err, medici) => {
+
         if (err) return next(new Error("Internal Server Error"));
 
         if (medici.length === 0) {
@@ -477,22 +478,6 @@ const getSpecializzazioni = (req, res, next) => {
     });
 };
 
-// CERCA CITTA
-const getCities = (req, res, next) => {
-    const sql = `
-        SELECT DISTINCT citta 
-        FROM medici 
-        ORDER BY citta
-    `;
-    
-    connection.query(sql, (err, results) => {
-        if (err) {
-            return next(new Error("Errore del server"));
-        }
-        res.status(200).json(results);
-    });
-};
-
 // ULTIME 10 RECENSIONI
 const getLatestReviews = (req, res, next) => {
     const sql = `
@@ -554,5 +539,4 @@ module.exports = {
     getSpecializzazioni,
     getLatestReviews,
     getTopDoctors,
-    getCities,
 }
