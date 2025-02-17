@@ -495,6 +495,7 @@ const getLatestReviews = (req, res, next) => {
             recensioni.*,
             medici.nome as nome_medico,
             medici.cognome as cognome_medico,
+            medici.immagine as immagine_medico,
             medici.slug as medico_slug,
             specializzazioni.nome_specializzazione
         FROM recensioni
