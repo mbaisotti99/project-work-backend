@@ -424,18 +424,26 @@ let transport = nodemailer.createTransport({
 
 const sendMail = (req, resp, next) => {
     const { slug } = req.params
-    const { subject, text } = req.body;
+    const { text, nome_utente, email_utente } = req.body;
 
     const sql = `
         SELECT email FROM medici WHERE slug = ?
     `
     connection.query(sql, [slug], (err, result) => {
 
-        if (!subject || !text) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email_utente)) {
+            return resp.status(400).json({
+                status: "fail",
+                message: "L'email inserita non è valida"
+            });
+        }
+
+        if (!text) {
             return resp.status(500).json({
                 message: "I campi non devono essere vuoti"
             })
-        } else if (Array.from(subject).length < 3 || Array.from(text).length < 3) {
+        } else if (Array.from(text).length < 3) {
             return resp.status(500).json({
                 message: "I campi devono contenere almeno 3 caratteri"
             })
@@ -446,8 +454,10 @@ const sendMail = (req, resp, next) => {
             transport.sendMail({
                 from: "gruppo7@esempio.it", // Email mittente
                 to: result[0].email, // Email destinatario
-                subject, // Oggetto email
-                text, // Testo email
+                subject: `Richiesta consulenza da parte di ${nome_utente}`, // Oggetto email
+                text: `${text} 
+                    Ricontattare a ${email_utente}
+                `, // Testo email
             });
             return resp.status(200).json({
                 message: `Mail inviata a ${result[0].email}`
