@@ -387,8 +387,8 @@ const storeRev = (req, res, next) => {
 
             // INSERISCI RECENSIONE
             const sqlInsertReview = `
-                INSERT INTO recensioni (id_medico, nome_utente, email_utente, recensione, voto)
-                VALUES (?, ?, ?, ?, ?);
+                INSERT INTO recensioni (id_medico, nome_utente, email_utente, recensione, voto, data)
+                VALUES (?, ?, ?, ?, ?, CURDATE() );
             `;
 
             connection.query(sqlInsertReview, [id_medico, nome_utente, email_utente, recensione, voto], (err, result) => {
