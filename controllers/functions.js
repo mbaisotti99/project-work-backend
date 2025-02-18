@@ -185,7 +185,7 @@ const showRev = (req, resp, next) => {
 const storeMed = (req, res, next) => {
 
     const imageName = req.file.filename;
-    const { nome, cognome, email, telefono, indirizzo, citta, specializzazione } = req.body;
+    const { nome, cognome, email, telefono, indirizzo, citta, specializzazione, descrizione } = req.body;
 
     // VALIDAZIONE FILE
     if (!req.file || !req.file.filename) {
@@ -235,6 +235,15 @@ const storeMed = (req, res, next) => {
             message: "L'indirizzo deve avere almeno 5 caratteri"
         });
 
+    }
+
+    // VALIDAZIONE DESCRIZIONE
+
+    if (descrizione.length < 3) {
+        return res.status(400).json({
+            status: "fail",
+            message: "La descrizione deve avere almeno 3 caratteri"
+        })
     }
 
     // VALIDAZIONE EMAIL
@@ -331,11 +340,11 @@ const storeMed = (req, res, next) => {
 
                 // INSERIMENTO MEDICO
                 const sql = `
-                    INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, id_specializzazione, immagine)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    INSERT INTO medici (slug, nome, cognome, email, telefono, indirizzo, citta, id_specializzazione, immagine, descrizione)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 `;
 
-                connection.query(sql, [finalSlug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, imageName], (err, results) => {
+                connection.query(sql, [finalSlug, nome, cognome, email, telefono, indirizzo, citta, specializzazione, imageName, descrizione], (err, results) => {
 
                     if (err) return next(err);
 
