@@ -2,12 +2,22 @@
 const connection = require("../data/doc_db")
 const { generateSlug } = require("../utils/generateSlug")
 
-
 // INDEX MEDICI
 const indexMed = (req, resp, next) => {
 
     const filters = req.query;
+    const page = parseInt(req.query.page) || 1; // DEFAULT PAGINA 1
+    const limit = parseInt(req.query.limit) || 6; // DEFAULT 6 MEDICI PER PAGINA
+    const offset = (page - 1) * limit;
 
+    // PRIMA QUERY PER IL COUNT
+    let countSql = `
+        SELECT COUNT(*) as total
+        FROM medici
+        JOIN specializzazioni ON medici.id_specializzazione = specializzazioni.id
+    `;
+
+    // QUERY PRINCIPALE PER I DATI
     let sql = `
         SELECT 
             medici.id,
@@ -37,31 +47,53 @@ const indexMed = (req, resp, next) => {
         params.push(filters.specializzazione);
     }
 
-    if (filters.citta) {
-        conditions.push("medici.citta LIKE ?");
-        params.push(`%${filters.citta}%`);
-    }
-
     if (conditions.length > 0) {
-        sql += ` WHERE ${conditions.join(" AND ")}`;
+        const whereClause = ` WHERE ${conditions.join(" AND ")}`;
+        sql += whereClause;
+        countSql += whereClause;
     }
 
-    sql += ` ORDER BY medici.id`;
+    sql += ` ORDER BY medici.id LIMIT ? OFFSET ?`;
+    
+    // AGGIUNGI LIMIT E OFFSET AI PARAMETRI
+    const queryParams = [...params];
+    const countParams = [...params];
+    queryParams.push(limit, offset);
 
-    connection.query(sql, params, (err, docs) => {
-
+    // ESEGUI QUERY PER IL COUNT
+    connection.query(countSql, countParams, (err, countResult) => {
         if (err) {
-            return next(new Error("Errore del server"))
-        } else {
-            resp.status(200).json({
-                message: "Medici trovati",
-                data: docs
-            })
+            return next(new Error("Errore del server"));
         }
 
-    })
+        const totalItems = countResult[0].total;
+        const totalPages = Math.ceil(totalItems / limit);
 
-}
+        // ESEGUI QUERY PRINCIPALE
+        connection.query(sql, queryParams, (err, docs) => {
+
+            if (err) {
+                return next(new Error("Errore del server"));
+            }
+
+            resp.status(200).json({
+                message: "Medici trovati",
+                data: docs,
+                pagination: {
+                    currentPage: page,
+                    itemsPerPage: limit,
+                    totalItems: totalItems,
+                    totalPages: totalPages,
+                    hasNextPage: page < totalPages,
+                    hasPrevPage: page > 1
+                }
+            });
+
+        });
+
+    });
+
+};
 
 // SHOW MEDICI
 const showMed = (req, res, next) => {
